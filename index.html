@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой Кликер</title>
+    <style>
+        body { text-align: center; font-family: sans-serif; background: #222; color: #fff; padding-top: 50px; }
+        #coin { width: 200px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Монеты: <span id="score">0</span></h1>
+    <img id="coin" src="https://cdn-icons-png.flaticon.com/512/2422/2422818.png" alt="coin">
+    <script>
+        let score = 0;
+        document.getElementById('coin').onclick = () => {
+            score++;
+            document.getElementById('score').innerText = score;
+        };
+    </script>
+</body>
+</html>
