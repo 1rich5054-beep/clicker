@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PvP Арена (Тест)</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background-color: #0d0d0d; color: white; font-family: sans-serif; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .top-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #1e1e1e; padding: 10px; border-radius: 10px; box-sizing: border-box;}
+        .balance { color: #ffc107; font-size: 18px; font-weight: bold; }
+        .ref-btn { background: #3b5bdb; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; }
+        
+        .arena-grid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 5px; border-radius: 15px; overflow: hidden; margin-bottom: 15px; }
+        .player-slot { background-color: #333; height: 140px; display: flex; justify-content: center; align-items: center; position: relative; }
+        .slot-1 { background-color: #2ecc71; } .slot-2 { background-color: #3498db; } .slot-3 { background-color: #9b59b6; } .slot-4 { background-color: #e74c3c; }
+        
+        .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3); }
+        .spin-btn { width: 100%; background: #1a237e; color: white; border: none; padding: 15px; border-radius: 15px; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        
+        .controls { display: flex; gap: 10px; width: 100%; margin-bottom: 15px; }
+        .bet-btn { flex: 1; background: #2a2a2a; color: white; border: none; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold; }
+        .bet-btn.active { background: #3b5bdb; }
+    </style>
+</head>
+<body>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ С БАЛАНСОМ -->
+    <div class="top-bar">
+        <div>Мой баланс: <span class="balance" id="userBalance">0</span> ⭐</div>
+        <button class="ref-btn" id="refBtn">Пригласить друга</button>
+    </div>
+
+    <!-- ВЫБОР СТАВКИ -->
+    <div class="controls">
+        <button class="bet-btn active" onclick="setBet(50)">50 ⭐</button>
+        <button class="bet-btn" onclick="setBet(200)">200 ⭐</button>
+        <button class="bet-btn" onclick="setBet(500)">500 ⭐</button>
+    </div>
+
+    <div class="arena-grid">
+        <div class="player-slot slot-1"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=1" class="avatar" id="av1"></div>
+        <div class="player-slot slot-2"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=2" class="avatar" id="av2"></div>
+        <div class="player-slot slot-3"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=3" class="avatar" id="av3"></div>
+        <div class="player-slot slot-4">
+            <div id="roulette-circle" style="width: 80px; height: 80px; background: #2ecc71; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; font-weight: bold;">?</div>
+        </div>
+    </div>
+
+    <button class="spin-btn" id="spinBtn">Сделать ставку и крутить</button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // --- ЛОГИКА БАЛАНСА И РЕФЕРАЛКИ (Имитация сервера) ---
+        let balance = parseInt(localStorage.getItem('balance'));
+        
+        // Если зашел впервые - даем 100 звезд
+        if (isNaN(balance)) {
+            balance = 100;
+            localStorage.setItem('balance', balance);
+            alert("Добро пожаловать! Тебе начислено 100 ⭐ за первый вход!");
+        }
+
+        // Обновляем баланс на экране
+        function updateBalance() {
+            document.getElementById('userBalance').innerText = balance;
+            localStorage.setItem('balance', balance);
+        }
+        updateBalance();
+
+        // Реферальная система (просто копирует ссылку)
+        document.getElementById('refBtn').addEventListener('click', () => {
+            const userId = tg.initDataUnsafe?.user?.id || "12345678";
+            const refLink = `https://t.me/ТвойБот?start=ref_${userId}`;
+            navigator.clipboard.writeText(refLink);
+            alert("Твоя ссылка скопирована!\n" + refLink + "\nЗа каждого друга ты получишь 50 ⭐ (в будущем на сервере).");
+        });
+
+        // --- ЛОГИКА АРЕНЫ ---
+        let currentBet = 50;
+        function setBet(amount) {
+            currentBet = amount;
+            document.querySelectorAll('.bet-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        document.getElementById('spinBtn').addEventListener('click', function() {
+            if (balance < currentBet) {
+                alert("Недостаточно звезд! У тебя: " + balance + " ⭐");
+                return;
+            }
+
+            // Списываем ставку
+            balance -= currentBet;
+            updateBalance();
+
+            const btn = this;
+            btn.innerText = "Крутим...";
+            btn.style.color = "#aaa";
+            
+            const circle = document.getElementById('roulette-circle');
+            const colors = ['#2ecc71', '#3498db', '#9b59b6', '#e74c3c'];
+            let counter = 0;
+            
+            // Анимация кручения
+            const interval = setInterval(() => {
+                circle.style.backgroundColor = colors[counter % 4];
+                circle.innerText = (counter % 4) + 1;
+                counter++;
+            }, 100);
+
+            // Остановка и подсчет выигрыша
+            setTimeout(() => {
+                clearInterval(interval);
+                
+                // Честный рандом от 0 до 3 (4 игрока)
+                const winnerIndex = Math.floor(Math.random() * 4); 
+                
+                circle.style.backgroundColor = colors[winnerIndex];
+                circle.innerText = winnerIndex + 1;
+                
+                // Комиссия бота 7%
+                const prizePool = currentBet * 4; // 4 игрока
+                const commission = prizePool * 0.07;
+                const winAmount = Math.floor(prizePool - commission);
+
+                btn.innerText = "Играть снова";
+                btn.style.color = "white";
+
+                if (winnerIndex === 0) {
+                    // Допустим, мы - это Игрок 1 (зеленый)
+                    balance += winAmount;
+                    updateBalance();
+                    alert("🎉 ТЫ ВЫИГРАЛ!\nТвой приз: " + winAmount + " ⭐ (комиссия 7% уже вычтена)");
+                } else {
+                    alert("Ты проиграл. Победил Игрок " + (winnerIndex + 1) + "\nОн забрал " + winAmount + " ⭐");
+                }
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
